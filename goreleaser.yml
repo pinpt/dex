@@ -5,7 +5,6 @@ build:
   ldflags: -w -X main.build={{.Version}}
   binary: dex
   goos:
-    - windows
     - darwin
     - linux
   goarch:
