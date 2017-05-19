@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Execute() *cobra.Command {
+func GetCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use: "dex",
 		Run: func(cmd *cobra.Command, args []string) {

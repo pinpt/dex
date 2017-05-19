@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	if err := dex.Execute(); err != nil {
+	if err := dex.GetCommand().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(2)
 	}

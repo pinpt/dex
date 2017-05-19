@@ -151,7 +151,6 @@ func (c *Config) openConnector(logger logrus.FieldLogger) (*provider, error) {
 	default:
 		return nil, fmt.Errorf("missing required fields %q", missing)
 	}
-	fmt.Println(c)
 	p := &provider{
 		entityIssuer: c.EntityIssuer,
 		ssoIssuer:    c.SSOIssuer,
