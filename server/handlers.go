@@ -174,31 +174,40 @@ func (s *Server) handleAuthorization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(connectors) == 1 {
-		for _, c := range connectors {
-			// TODO(ericchiang): Make this pass on r.URL.RawQuery and let something latter
-			// on create the auth request.
-			http.Redirect(w, r, s.absPath("/auth", c.ID)+"?req="+authReq.ID, http.StatusFound)
+	domain := r.URL.Query().Get("domainID")
+	for _, conn := range connectors {
+		if domain == conn.ID {
+			http.Redirect(w, r, s.absPath("/auth", conn.ID)+"?req="+authReq.ID, http.StatusFound)
 			return
 		}
 	}
+	w.WriteHeader(http.StatusForbidden)
 
-	connectorInfos := make([]connectorInfo, len(connectors))
-	i := 0
-	for _, conn := range connectors {
-		connectorInfos[i] = connectorInfo{
-			ID:   conn.ID,
-			Name: conn.Name,
-			// TODO(ericchiang): Make this pass on r.URL.RawQuery and let something latter
-			// on create the auth request.
-			URL: s.absPath("/auth", conn.ID) + "?req=" + authReq.ID,
-		}
-		i++
-	}
+	// if len(connectors) == 1 {
+	// 	for _, c := range connectors {
+	// 		// TODO(ericchiang): Make this pass on r.URL.RawQuery and let something latter
+	// 		// on create the auth request.
+	// 		http.Redirect(w, r, s.absPath("/auth", c.ID)+"?req="+authReq.ID, http.StatusFound)
+	// 		return
+	// 	}
+	// }
 
-	if err := s.templates.login(w, connectorInfos); err != nil {
-		s.logger.Errorf("Server template error: %v", err)
-	}
+	// connectorInfos := make([]connectorInfo, len(connectors))
+	// i := 0
+	// for _, conn := range connectors {
+	// 	connectorInfos[i] = connectorInfo{
+	// 		ID:   conn.ID,
+	// 		Name: conn.Name,
+	// 		// TODO(ericchiang): Make this pass on r.URL.RawQuery and let something latter
+	// 		// on create the auth request.
+	// 		URL: s.absPath("/auth", conn.ID) + "?req=" + authReq.ID,
+	// 	}
+	// 	i++
+	// }
+
+	// if err := s.templates.login(w, connectorInfos); err != nil {
+	// 	s.logger.Errorf("Server template error: %v", err)
+	// }
 }
 
 func (s *Server) handleConnectorLogin(w http.ResponseWriter, r *http.Request) {
