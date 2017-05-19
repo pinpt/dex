@@ -105,9 +105,9 @@ func NewProvider(ctx context.Context, issuer string) (*Provider, error) {
 	if err := json.Unmarshal(body, &p); err != nil {
 		return nil, fmt.Errorf("oidc: failed to decode provider discovery object: %v", err)
 	}
-	if p.Issuer != issuer {
-		return nil, fmt.Errorf("oidc: issuer did not match the issuer returned by provider, expected %q got %q", issuer, p.Issuer)
-	}
+	// if p.Issuer != issuer {
+	// 	return nil, fmt.Errorf("oidc: issuer did not match the issuer returned by provider, expected %q got %q", issuer, p.Issuer)
+	// }
 	return &Provider{
 		issuer:       p.Issuer,
 		authURL:      p.AuthURL,

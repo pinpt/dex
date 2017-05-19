@@ -1,3 +1,8 @@
 bin
 dist
 _output
+examples/GoogleIDPCertificate-pinpt.co.pem
+examples/config.yaml
+examples/robin-config.yaml
+examples/tls.crt
+examples/tls.key

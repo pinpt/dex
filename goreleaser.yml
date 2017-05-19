@@ -1,0 +1,11 @@
+# goreleaser.yml
+# Build customization
+build:
+  main: ./main.go
+  ldflags: -w -X main.build={{.Version}}
+  binary: dex
+  goos:
+    - darwin
+    - linux
+  goarch:
+    - amd64

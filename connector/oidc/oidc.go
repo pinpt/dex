@@ -135,6 +135,7 @@ func (c *oidcConnector) Close() error {
 }
 
 func (c *oidcConnector) LoginURL(s connector.Scopes, callbackURL, state string) (string, error) {
+
 	if c.redirectURI != callbackURL {
 		return "", fmt.Errorf("expected callback URL did not match the URL in the config")
 	}

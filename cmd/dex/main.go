@@ -1,13 +1,12 @@
-package main
+package dex
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-func commandRoot() *cobra.Command {
+func GetCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use: "dex",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -18,11 +17,4 @@ func commandRoot() *cobra.Command {
 	rootCmd.AddCommand(commandServe())
 	rootCmd.AddCommand(commandVersion())
 	return rootCmd
-}
-
-func main() {
-	if err := commandRoot().Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(2)
-	}
 }

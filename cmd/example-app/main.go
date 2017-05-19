@@ -249,7 +249,7 @@ func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
 		authCodeURL = a.oauth2Config(scopes).AuthCodeURL(exampleAppState, oauth2.AccessTypeOffline)
 	}
 
-	http.Redirect(w, r, authCodeURL, http.StatusSeeOther)
+	http.Redirect(w, r, authCodeURL+"&domainID=google", http.StatusSeeOther)
 }
 
 func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
