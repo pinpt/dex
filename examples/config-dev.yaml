@@ -1,7 +1,7 @@
 # The base path of dex and the external name of the OpenID Connect service.
 # This is the canonical URL that all clients MUST use to refer to dex. If a
 # path is provided, dex's HTTP service will listen at a non-root URL.
-issuer: http://127.0.0.1:5556/dex
+issuer: https://api:5554/dex
 
 # The storage configuration determines where dex stores its state. Supported
 # options include SQL flavors and Kubernetes third party resources.
@@ -17,11 +17,11 @@ storage:
 
 # Configuration for the HTTP endpoints.
 web:
-  http: 0.0.0.0:5556
+  # http: 0.0.0.0:5556
   # Uncomment for HTTPS options.
-  # https: 127.0.0.1:5554
-  # tlsCert: /etc/dex/tls.crt
-  # tlsKey: /etc/dex/tls.key
+  https: 0.0.0.0:5554
+  tlsCert: examples/tls.crt
+  tlsKey: examples/tls.key
 
 # Uncomment this block to enable the gRPC API. This values MUST be different
 # from the HTTP endpoints.
@@ -55,6 +55,29 @@ connectors:
 - type: mockCallback
   id: mock
   name: Example
+# - type: saml
+#   id: google
+#   name: Google
+#   config:
+#     ssoURL: https://accounts.google.com/o/saml2/idp?idpid=C03wvl9de
+#     ca: examples/GoogleIDPCertificate-pinpt.co.pem
+#     redirectURI: https://127.0.0.1:5554/dex/callback
+#     usernameAttr: NameID
+#     emailAttr: email
+#     groupsAttr: groups
+#     entityIssuer: https://127.0.0.1:5554
+
+# insert into connector values("google", "saml", "Google", "1", '{"ssoURL":"https://accounts.google.com/o/saml2/idp?idpid=C03wvl9de","ca":"examples/GoogleIDPCertificate-pinpt.co.pem","redirectURI":"https://127.0.0.1:5554/dex/callback","usernameAttr":"NameID","emailAttr":"email","groupsAttr":"groups","issuer":"https://127.0.0.1:5554"}');
+# {
+#     "ssoURL": "https://accounts.google.com/o/saml2/idp?idpid=C03wvl9de",
+#     "ca": "examples/GoogleIDPCertificate-pinpt.co.pem",
+#     "redirectURI": "https://127.0.0.1:5554/dex/callback",
+#     "usernameAttr": "NameID",
+#     "emailAttr": "email",
+#     "groupsAttr": "groups",
+#     "issuer": "https://127.0.0.1:5554"
+# }
+
 # - type: oidc
 #   id: google
 #   name: Google
@@ -67,6 +90,8 @@ connectors:
 
 # Let dex keep a list of passwords which can be used to login to dex.
 enablePasswordDB: true
+oauth2:
+  skipApprovalScreen: true
 
 # A static list of passwords to login the end user. By identifying here, dex
 # won't look in its underlying storage for passwords.
