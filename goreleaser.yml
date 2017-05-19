@@ -1,6 +1,7 @@
 # goreleaser.yml
 # Build customization
 build:
+  main: ./cmd/dex/main.go
   binary: dex
   goos:
     - windows
