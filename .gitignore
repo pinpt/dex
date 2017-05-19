@@ -6,3 +6,4 @@ examples/config.yaml
 examples/robin-config.yaml
 examples/tls.crt
 examples/tls.key
+*.DS_Store
