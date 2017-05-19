@@ -8,9 +8,12 @@ issuer: http://127.0.0.1:5556/dex
 #
 # See the storage document at Documentation/storage.md for further information.
 storage:
-  type: sqlite3
+  type: mysql
   config:
-    file: examples/dex.db
+    Database: dex
+    User: root
+    Password: beans
+    Host: 127.0.0.1:3306
 
 # Configuration for the HTTP endpoints.
 web:
