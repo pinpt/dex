@@ -354,14 +354,11 @@ func (s *Server) parseAuthorizationRequest(r *http.Request) (req storage.AuthReq
 		return req, &authErr{"", "", errInvalidRequest, "Failed to parse request body."}
 	}
 
-	fmt.Println(">>>>>>>>>>>>>> AUTH HOST", r.Host)
-
 	q := r.Form
 	redirectURI, err := url.QueryUnescape(q.Get("redirect_uri"))
 	if err != nil {
 		return req, &authErr{"", "", errInvalidRequest, "No redirect_uri provided."}
 	}
-	fmt.Println(">>>>>>>>>>>>>> AUTH redirectURI", redirectURI)
 
 	// replace the 127.0.0.1 address for the server issuer url with the one that's asking for it
 	// this is for multi-homed hosts talking with a trusted Dex server
