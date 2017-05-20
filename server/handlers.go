@@ -167,21 +167,30 @@ func (s *Server) handleAuthorization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connectors, e := s.storage.ListConnectors()
+	domain := r.URL.Query().Get("domainID")
+	conn, e := s.storage.GetConnector(domain)
 	if e != nil {
-		s.logger.Errorf("Failed to get list of connectors: %v", err)
-		s.renderError(w, http.StatusInternalServerError, "Failed to retrieve connector list.")
+		s.logger.Errorf("Failed to get connector: %v. %v", domain, err)
+		s.renderError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	domain := r.URL.Query().Get("domainID")
-	for _, conn := range connectors {
-		if domain == conn.ID {
-			http.Redirect(w, r, s.absPath("/auth", conn.ID)+"?req="+authReq.ID, http.StatusFound)
-			return
-		}
-	}
-	w.WriteHeader(http.StatusForbidden)
+	http.Redirect(w, r, s.absPath("/auth", conn.ID)+"?req="+authReq.ID, http.StatusFound)
+
+	// connectors, e := s.storage.ListConnectors()
+	// if e != nil {
+	// 	s.logger.Errorf("Failed to get list of connectors: %v", err)
+	// 	s.renderError(w, http.StatusInternalServerError, "Failed to retrieve connector list.")
+	// 	return
+	// }
+
+	// for _, conn := range connectors {
+	// 	if domain == conn.ID {
+	// 		http.Redirect(w, r, s.absPath("/auth", conn.ID)+"?req="+authReq.ID, http.StatusFound)
+	// 		return
+	// 	}
+	// }
+	// w.WriteHeader(http.StatusForbidden)
 
 	// if len(connectors) == 1 {
 	// 	for _, c := range connectors {
@@ -527,7 +536,7 @@ func (s *Server) sendCodeResponse(w http.ResponseWriter, r *http.Request, authRe
 		case responseTypeIDToken:
 			implicitOrHybrid = true
 			var err error
-			idToken, idTokenExpiry, err = s.newIDToken(authReq.ClientID, authReq.Claims, authReq.Scopes, authReq.Nonce, accessToken, authReq.ConnectorID)
+			idToken, idTokenExpiry, err = s.newIDToken(authReq.ClientID, authReq.Claims, authReq.Scopes, authReq.Nonce, accessToken, authReq.ConnectorID, authReq.IssuerURL)
 			if err != nil {
 				s.logger.Errorf("failed to create ID token: %v", err)
 				s.tokenErrHelper(w, errServerError, "", http.StatusInternalServerError)
@@ -648,8 +657,12 @@ func (s *Server) handleAuthCode(w http.ResponseWriter, r *http.Request, client s
 		return
 	}
 
+	// replace the 127.0.0.1 address for the server issuer url with the one that's asking for it
+	// this is for multi-homed hosts talking with a trusted Dex server
+	issuerURL := "https://" + strings.Replace(s.issuerURL.Host, "127.0.0.1", r.Host, 1) + s.issuerURL.Path
+
 	accessToken := storage.NewID()
-	idToken, expiry, err := s.newIDToken(client.ID, authCode.Claims, authCode.Scopes, authCode.Nonce, accessToken, authCode.ConnectorID)
+	idToken, expiry, err := s.newIDToken(client.ID, authCode.Claims, authCode.Scopes, authCode.Nonce, accessToken, authCode.ConnectorID, issuerURL)
 	if err != nil {
 		s.logger.Errorf("failed to create ID token: %v", err)
 		s.tokenErrHelper(w, errServerError, "", http.StatusInternalServerError)
@@ -897,8 +910,12 @@ func (s *Server) handleRefreshToken(w http.ResponseWriter, r *http.Request, clie
 		Groups:        ident.Groups,
 	}
 
+	// replace the 127.0.0.1 address for the server issuer url with the one that's asking for it
+	// this is for multi-homed hosts talking with a trusted Dex server
+	issuerURL := "https://" + strings.Replace(s.issuerURL.Host, "127.0.0.1", r.Host, 1) + s.issuerURL.Path
+
 	accessToken := storage.NewID()
-	idToken, expiry, err := s.newIDToken(client.ID, claims, scopes, refresh.Nonce, accessToken, refresh.ConnectorID)
+	idToken, expiry, err := s.newIDToken(client.ID, claims, scopes, refresh.Nonce, accessToken, refresh.ConnectorID, issuerURL)
 	if err != nil {
 		s.logger.Errorf("failed to create ID token: %v", err)
 		s.tokenErrHelper(w, errServerError, "", http.StatusInternalServerError)

@@ -111,10 +111,11 @@ func (c *conn) CreateAuthRequest(a storage.AuthRequest) error {
 			claims_user_id, claims_username, claims_email, claims_email_verified,
 			claims_groups,
 			connector_id, connector_data,
-			expiry
+			expiry,
+			issuer_url
 		)
 		values (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
 		);
 	`,
 		a.ID, a.ClientID, encoder(a.ResponseTypes), encoder(a.Scopes), a.RedirectURI, a.Nonce, a.State,
@@ -122,7 +123,7 @@ func (c *conn) CreateAuthRequest(a storage.AuthRequest) error {
 		a.Claims.UserID, a.Claims.Username, a.Claims.Email, a.Claims.EmailVerified,
 		encoder(a.Claims.Groups),
 		a.ConnectorID, a.ConnectorData,
-		a.Expiry,
+		a.Expiry, a.IssuerURL,
 	)
 	if err != nil {
 		if c.alreadyExistsCheck(err) {
@@ -182,14 +183,14 @@ func getAuthRequest(q querier, id string) (a storage.AuthRequest, err error) {
 			force_approval_prompt, logged_in,
 			claims_user_id, claims_username, claims_email, claims_email_verified,
 			claims_groups,
-			connector_id, connector_data, expiry
+			connector_id, connector_data, expiry, issuer_url
 		from auth_request where id = $1;
 	`, id).Scan(
 		&a.ID, &a.ClientID, decoder(&a.ResponseTypes), decoder(&a.Scopes), &a.RedirectURI, &a.Nonce, &a.State,
 		&a.ForceApprovalPrompt, &a.LoggedIn,
 		&a.Claims.UserID, &a.Claims.Username, &a.Claims.Email, &a.Claims.EmailVerified,
 		decoder(&a.Claims.Groups),
-		&a.ConnectorID, &a.ConnectorData, &a.Expiry,
+		&a.ConnectorID, &a.ConnectorData, &a.Expiry, &a.IssuerURL,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

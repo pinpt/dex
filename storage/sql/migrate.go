@@ -102,7 +102,9 @@ var migrations = []migration{
 				connector_id text not null,
 				connector_data bytea,
 		
-				expiry timestamptz not null
+				expiry timestamptz not null,
+
+				issuer_url text
 			);`,
 			`
 			create table auth_code (
