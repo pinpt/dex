@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-	fmt.Println("HEY ROBIN")
 	if err := dex.GetCommand().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(2)
