@@ -240,6 +240,15 @@ func (s *MySQL) open(logger logrus.FieldLogger) (*conn, error) {
 		}
 	}
 
+	errCheck := func(err error) bool {
+		sqlErr, ok := err.(*mysql.MySQLError)
+		if !ok {
+			return false
+		}
+		return sqlErr.Number == mysqlErrDupEntry ||
+			sqlErr.Number == mysqlErrDupEntryWithKeyName
+	}
+
 	for {
 		db, err = sql.Open("mysql", dsn)
 		if err != nil {
@@ -250,23 +259,17 @@ func (s *MySQL) open(logger logrus.FieldLogger) (*conn, error) {
 			}
 			return nil, err
 		}
-		break
-	}
-
-	errCheck := func(err error) bool {
-		sqlErr, ok := err.(*mysql.MySQLError)
-		if !ok {
-			return false
+		c := &conn{db, flavorMySQL, logger, errCheck}
+		if _, err := c.migrate(); err != nil {
+			// try up to 1 min to connect
+			if time.Since(started) < timeout {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return nil, fmt.Errorf("failed to perform migrations: %v", err)
 		}
-		return sqlErr.Number == mysqlErrDupEntry ||
-			sqlErr.Number == mysqlErrDupEntryWithKeyName
+		return c, nil
 	}
-
-	c := &conn{db, flavorMySQL, logger, errCheck}
-	if _, err := c.migrate(); err != nil {
-		return nil, fmt.Errorf("failed to perform migrations: %v", err)
-	}
-	return c, nil
 }
 
 func (s *MySQL) makeTLSConfig() error {
