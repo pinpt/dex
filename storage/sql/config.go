@@ -175,7 +175,8 @@ func (p *Postgres) open(logger logrus.FieldLogger) (*conn, error) {
 type MySQL struct {
 	NetworkDB
 
-	SSL SSL `json:"ssl" yaml:"ssl"`
+	SSL         SSL           `json:"ssl" yaml:"ssl"`
+	WaitTimeout time.Duration `json:"wait_timeout" yaml:"wait_timeout"`
 
 	// TODO(pborzenkov): used by tests to reduce lock wait timeout. Should
 	// we make it exported and allow users to provide arbitrary params?
@@ -225,9 +226,23 @@ func (s *MySQL) open(logger logrus.FieldLogger) (*conn, error) {
 		cfg.Params[k] = v
 	}
 
-	db, err := sql.Open("mysql", cfg.FormatDSN())
-	if err != nil {
-		return nil, err
+	var db *sql.DB
+	var err error
+
+	started := time.Now()
+	dsn := cfg.FormatDSN()
+
+	for {
+		db, err = sql.Open("mysql", dsn)
+		if err != nil {
+			// try up to 1 min to connect
+			if time.Since(started) < s.WaitTimeout {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return nil, err
+		}
+		break
 	}
 
 	errCheck := func(err error) bool {

@@ -217,7 +217,7 @@ func newServer(ctx context.Context, c Config, rotationStrategy rotationStrategy)
 		break
 	}
 
-	s.logger.Infof("detected %d storage connectors\n", len(storageConnectors))
+	s.logger.Infof("detected %d storage connectors", len(storageConnectors))
 
 	for _, conn := range storageConnectors {
 		if _, err := s.OpenConnector(conn); err != nil {
