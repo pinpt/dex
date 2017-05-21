@@ -71,7 +71,7 @@ type migration struct {
 var migrations = []migration{
 	{
 		stmts: []string{`
-			create table dex_client (
+			create table if not exists dex_client (
 				id text not null primary key,
 				secret text not null,
 				redirect_uris bytea not null, -- JSON array of strings
@@ -183,7 +183,7 @@ var migrations = []migration{
 	},
 	{
 		stmts: []string{`
-			create table dex_connector (
+			create table if not exists dex_connector (
 				id text not null primary key,
 				type text not null,
 				name text not null,
