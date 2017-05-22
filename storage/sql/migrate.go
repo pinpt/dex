@@ -7,13 +7,13 @@ import (
 
 func (c *conn) migrate() (int, error) {
 	_, err := c.Exec(`
-		create table if not exists migrations (
+		create table if not exists dex_migrations (
 			num integer not null,
 			at timestamptz not null
 		);
 	`)
 	if err != nil {
-		return 0, fmt.Errorf("creating migration table: %v", err)
+		return 0, fmt.Errorf("creating dex_migrations table: %v", err)
 	}
 
 	i := 0
@@ -25,8 +25,8 @@ func (c *conn) migrate() (int, error) {
 				num sql.NullInt64
 				n   int
 			)
-			if err := tx.QueryRow(`select max(num) from migrations;`).Scan(&num); err != nil {
-				return fmt.Errorf("select max migration: %v", err)
+			if err := tx.QueryRow(`select max(num) from dex_migrations;`).Scan(&num); err != nil {
+				return fmt.Errorf("select max dex_migrations: %v", err)
 			}
 			if num.Valid {
 				n = int(num.Int64)
@@ -44,9 +44,9 @@ func (c *conn) migrate() (int, error) {
 				}
 			}
 
-			q := `insert into migrations (num, at) values ($1, now());`
+			q := `insert into dex_migrations (num, at) values ($1, now());`
 			if _, err := tx.Exec(q, migrationNum); err != nil {
-				return fmt.Errorf("update migration table: %v", err)
+				return fmt.Errorf("update dex_migrations table: %v", err)
 			}
 			return nil
 		})
