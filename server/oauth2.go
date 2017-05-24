@@ -507,6 +507,7 @@ func (s *Server) validateCrossClientTrust(clientID, peerID string) (trusted bool
 }
 
 func validateRedirectURI(client storage.Client, redirectURI string) bool {
+	fmt.Println("validateRedirectURI:", redirectURI, client.RedirectURIs)
 	if !client.Public {
 		for _, uri := range client.RedirectURIs {
 			if redirectURI == uri {
