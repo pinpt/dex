@@ -175,7 +175,8 @@ func (p *Postgres) open(logger logrus.FieldLogger) (*conn, error) {
 type MySQL struct {
 	NetworkDB
 
-	SSL SSL `json:"ssl" yaml:"ssl"`
+	SSL         SSL    `json:"ssl" yaml:"ssl"`
+	WaitTimeout string `json:"wait_timeout" yaml:"wait_timeout"`
 
 	// TODO(pborzenkov): used by tests to reduce lock wait timeout. Should
 	// we make it exported and allow users to provide arbitrary params?
@@ -225,9 +226,18 @@ func (s *MySQL) open(logger logrus.FieldLogger) (*conn, error) {
 		cfg.Params[k] = v
 	}
 
-	db, err := sql.Open("mysql", cfg.FormatDSN())
-	if err != nil {
-		return nil, err
+	var db *sql.DB
+	var err error
+	var timeout time.Duration
+
+	started := time.Now()
+	dsn := cfg.FormatDSN()
+
+	if s.WaitTimeout != "" {
+		timeout, err = time.ParseDuration(s.WaitTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid mysql wait timeout duration value = %v. %v", s.WaitTimeout, err)
+		}
 	}
 
 	errCheck := func(err error) bool {
@@ -239,11 +249,27 @@ func (s *MySQL) open(logger logrus.FieldLogger) (*conn, error) {
 			sqlErr.Number == mysqlErrDupEntryWithKeyName
 	}
 
-	c := &conn{db, flavorMySQL, logger, errCheck}
-	if _, err := c.migrate(); err != nil {
-		return nil, fmt.Errorf("failed to perform migrations: %v", err)
+	for {
+		db, err = sql.Open("mysql", dsn)
+		if err != nil {
+			// try up to 1 min to connect
+			if time.Since(started) < timeout {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return nil, err
+		}
+		c := &conn{db, flavorMySQL, logger, errCheck}
+		if _, err := c.migrate(); err != nil {
+			// try up to 1 min to connect
+			if time.Since(started) < timeout {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return nil, fmt.Errorf("failed to perform migrations: %v", err)
+		}
+		return c, nil
 	}
-	return c, nil
 }
 
 func (s *MySQL) makeTLSConfig() error {

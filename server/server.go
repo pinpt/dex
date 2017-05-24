@@ -193,16 +193,31 @@ func newServer(ctx context.Context, c Config, rotationStrategy rotationStrategy)
 		logger:                 c.Logger,
 	}
 
-	// Retrieves connector objects in backend storage. This list includes the static connectors
-	// defined in the ConfigMap and dynamic connectors retrieved from the storage.
-	storageConnectors, err := c.Storage.ListConnectors()
-	if err != nil {
-		return nil, fmt.Errorf("server: failed to list connector objects from storage: %v", err)
+	var storageConnectors []storage.Connector
+	var logged bool
+
+	for {
+		// Retrieves connector objects in backend storage. This list includes the static connectors
+		// defined in the ConfigMap and dynamic connectors retrieved from the storage.
+		sc, err := c.Storage.ListConnectors()
+		if err != nil {
+			return nil, fmt.Errorf("server: failed to list connector objects from storage: %v", err)
+		}
+
+		if len(sc) == 0 && len(s.connectors) == 0 {
+			// return nil, errors.New("server: no connectors specified")
+			if !logged {
+				logged = true
+				s.logger.Info("no connectors found during startup. will wait for a storage adapter to be configured before starting...")
+			}
+			time.Sleep(time.Second * 10)
+			continue
+		}
+		storageConnectors = sc
+		break
 	}
 
-	if len(storageConnectors) == 0 && len(s.connectors) == 0 {
-		return nil, errors.New("server: no connectors specified")
-	}
+	s.logger.Infof("detected %d storage connectors", len(storageConnectors))
 
 	for _, conn := range storageConnectors {
 		if _, err := s.OpenConnector(conn); err != nil {

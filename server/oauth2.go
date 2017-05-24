@@ -248,7 +248,7 @@ type idTokenClaims struct {
 	Name string `json:"name,omitempty"`
 }
 
-func (s *Server) newIDToken(clientID string, claims storage.Claims, scopes []string, nonce, accessToken, connID string) (idToken string, expiry time.Time, err error) {
+func (s *Server) newIDToken(clientID string, claims storage.Claims, scopes []string, nonce, accessToken, connID string, issuerURL string) (idToken string, expiry time.Time, err error) {
 	keys, err := s.storage.GetKeys()
 	if err != nil {
 		s.logger.Errorf("Failed to get keys: %v", err)
@@ -278,8 +278,12 @@ func (s *Server) newIDToken(clientID string, claims storage.Claims, scopes []str
 		return "", expiry, fmt.Errorf("failed to marshal offline session ID: %v", err)
 	}
 
+	if issuerURL == "" {
+		issuerURL = s.issuerURL.String()
+	}
+
 	tok := idTokenClaims{
-		Issuer:   s.issuerURL.String(),
+		Issuer:   issuerURL,
 		Subject:  subjectString,
 		Nonce:    nonce,
 		Expiry:   expiry.Unix(),
@@ -349,11 +353,16 @@ func (s *Server) parseAuthorizationRequest(r *http.Request) (req storage.AuthReq
 	if err := r.ParseForm(); err != nil {
 		return req, &authErr{"", "", errInvalidRequest, "Failed to parse request body."}
 	}
+
 	q := r.Form
 	redirectURI, err := url.QueryUnescape(q.Get("redirect_uri"))
 	if err != nil {
 		return req, &authErr{"", "", errInvalidRequest, "No redirect_uri provided."}
 	}
+
+	// replace the 127.0.0.1 address for the server issuer url with the one that's asking for it
+	// this is for multi-homed hosts talking with a trusted Dex server
+	issuerURL := "https://" + strings.Replace(s.issuerURL.Host, "127.0.0.1", r.Host, 1) + s.issuerURL.Path
 
 	clientID := q.Get("client_id")
 	state := q.Get("state")
@@ -476,6 +485,7 @@ func (s *Server) parseAuthorizationRequest(r *http.Request) (req storage.AuthReq
 		Scopes:              scopes,
 		RedirectURI:         redirectURI,
 		ResponseTypes:       responseTypes,
+		IssuerURL:           issuerURL,
 	}, nil
 }
 

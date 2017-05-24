@@ -7,13 +7,13 @@ import (
 
 func (c *conn) migrate() (int, error) {
 	_, err := c.Exec(`
-		create table if not exists migrations (
+		create table if not exists dex_migrations (
 			num integer not null,
 			at timestamptz not null
 		);
 	`)
 	if err != nil {
-		return 0, fmt.Errorf("creating migration table: %v", err)
+		return 0, fmt.Errorf("creating dex_migrations table: %v", err)
 	}
 
 	i := 0
@@ -25,8 +25,8 @@ func (c *conn) migrate() (int, error) {
 				num sql.NullInt64
 				n   int
 			)
-			if err := tx.QueryRow(`select max(num) from migrations;`).Scan(&num); err != nil {
-				return fmt.Errorf("select max migration: %v", err)
+			if err := tx.QueryRow(`select max(num) from dex_migrations;`).Scan(&num); err != nil {
+				return fmt.Errorf("select max dex_migrations: %v", err)
 			}
 			if num.Valid {
 				n = int(num.Int64)
@@ -44,9 +44,9 @@ func (c *conn) migrate() (int, error) {
 				}
 			}
 
-			q := `insert into migrations (num, at) values ($1, now());`
+			q := `insert into dex_migrations (num, at) values ($1, now());`
 			if _, err := tx.Exec(q, migrationNum); err != nil {
-				return fmt.Errorf("update migration table: %v", err)
+				return fmt.Errorf("update dex_migrations table: %v", err)
 			}
 			return nil
 		})
@@ -71,7 +71,7 @@ type migration struct {
 var migrations = []migration{
 	{
 		stmts: []string{`
-			create table client (
+			create table if not exists dex_client (
 				id text not null primary key,
 				secret text not null,
 				redirect_uris bytea not null, -- JSON array of strings
@@ -81,7 +81,7 @@ var migrations = []migration{
 				logo_url text not null
 			);`,
 			`
-			create table auth_request (
+			create table dex_auth_request (
 				id text not null primary key,
 				client_id text not null,
 				response_types bytea not null, -- JSON array of strings
@@ -102,10 +102,12 @@ var migrations = []migration{
 				connector_id text not null,
 				connector_data bytea,
 		
-				expiry timestamptz not null
+				expiry timestamptz not null,
+
+				issuer_url text
 			);`,
 			`
-			create table auth_code (
+			create table dex_auth_code (
 				id text not null primary key,
 				client_id text not null,
 				scopes bytea not null, -- JSON array of strings
@@ -124,7 +126,7 @@ var migrations = []migration{
 				expiry timestamptz not null
 			);`,
 			`
-			create table refresh_token (
+			create table dex_refresh_token (
 				id text not null primary key,
 				client_id text not null,
 				scopes bytea not null, -- JSON array of strings
@@ -140,7 +142,7 @@ var migrations = []migration{
 				connector_data bytea
 			);`,
 			`
-			create table password (
+			create table dex_password (
 				email text not null primary key,
 				hash bytea not null,
 				username text not null,
@@ -148,7 +150,7 @@ var migrations = []migration{
 			);`,
 			`
 			-- keys is a weird table because we only ever expect there to be a single row
-			create table keys (
+			create table dex_keys (
 				id text not null primary key,
 				verification_keys bytea not null, -- JSON array
 				signing_key bytea not null,       -- JSON object
@@ -159,19 +161,19 @@ var migrations = []migration{
 	},
 	{
 		stmts: []string{`
-			alter table refresh_token
+			alter table dex_refresh_token
 				add column token text not null default '';`,
 			`
-			alter table refresh_token
+			alter table dex_refresh_token
 				add column created_at timestamptz not null default '0001-01-01 00:00:00 UTC';`,
 			`
-			alter table refresh_token
+			alter table dex_refresh_token
 				add column last_used timestamptz not null default '0001-01-01 00:00:00 UTC';`,
 		},
 	},
 	{
 		stmts: []string{`
-			create table offline_session (
+			create table dex_offline_session (
 				user_id text not null,
 				conn_id text not null,
 				refresh bytea not null,
@@ -181,7 +183,7 @@ var migrations = []migration{
 	},
 	{
 		stmts: []string{`
-			create table connector (
+			create table if not exists dex_connector (
 				id text not null primary key,
 				type text not null,
 				name text not null,

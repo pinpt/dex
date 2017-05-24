@@ -182,6 +182,9 @@ type AuthRequest struct {
 	// Set when the user authenticates.
 	ConnectorID   string
 	ConnectorData []byte
+
+	// issuer URL to use
+	IssuerURL string
 }
 
 // AuthCode represents a code which can be exchanged for an OAuth2 token response.
